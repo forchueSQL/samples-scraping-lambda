@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  scrap
+
+  Sample SAM Template for scrap
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Tracing: Active
+  Api:
+    TracingEnabled: true
+
+Resources:
+  ScrapperFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: scrapper # Set the desired function name
+      CodeUri: scrap/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Events:
+        ScrapperApiEvent:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: "true"
+
+Outputs:
+  ScrapperApiUrl:
+    Description: API Gateway endpoint URL for Prod stage for Scrapper function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  ScrapperFunctionArn:
+    Description: Scrapper Lambda Function ARN
+    Value: !GetAtt ScrapperFunction.Arn
+  ScrapperFunctionIamRoleArn:
+    Description: Implicit IAM Role created for Scrapper function
+    Value: !GetAtt ScrapperFunctionRole.Arn
